@@ -1,4 +1,4 @@
-How do I replace multiple spaces with a single space in C#?
+How do I replace multiple spaces with a single space in C#?§c#;regex;string;
 How can I replace multiple spaces in a string with only one space in C#?
 Example:
 ^
@@ -173,4 +173,3 @@ publicstaticstringMergeSpaces(thisstring str){if(str ==null){returnnull;}else{St
                 stringBuilder.Append(c);
             i++;}return stringBuilder.ToString();}}
 ⱽ
-§

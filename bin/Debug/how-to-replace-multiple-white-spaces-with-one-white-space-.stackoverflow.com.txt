@@ -1,0 +1,226 @@
+How to replace multiple white spaces with one white space§c#; string; whitespace; 
+Let's say I have a string such as:
+^
+”Hello     how are   you           doing?”
+ⱽ
+I would like a function that turns multiple spaces into one space.
+So I would get:
+^
+”Hello how are you doing?”
+ⱽ
+I know I could use regex or call 
+^
+string s =”Hello     how are   you           doing?”.replace(”  ”,” ”);
+ⱽ
+But I would have to call it multiple times to make sure all sequential whitespaces are replaced with only one.
+Is there already a built in method for this?
+Could you clarify: are you only dealing with spaces, or ”all” whitespace?
+And do you want any non-space whitespace to be converted into spaces?
+I just meant all whitespace in series should be at most 1
+Possible duplicate of stackoverflow.com/questions/206717/…
+^
+string cleanedString =System.Text.RegularExpressions.Regex.Replace(dirtyString,@”\s+”,” ”);
+ⱽ
+imo, avoiding regex if your comfortable with them is premature optimization
+If you application isn't time critical, it can afford the 1 microsecond of processing overhead.
+Note that '\s' not only replaces white spaces, but also new line characters.
+good catch, if you just want spaces switch the pattern to ”[ ]+”
+Shouldn't you use '{2,}' instead of '+' to avoid replacing single whitespaces?
+This question isn't as simple as other posters have made it out to be (and as I originally believed it to be) - because the question isn't quite precise as it needs to be.
+There's a difference between ”space” and ”whitespace”. If you only mean spaces, then you should use a regex of ” {2,}”. If you mean any whitespace, that's a different matter. Should all whitespace be converted to spaces? What should happen to space at the start and end?
+For the benchmark below, I've assumed that you only care about spaces, and you don't want to do anything to single spaces, even at the start and end.
+Note that correctness is almost always more important than performance. The fact that the Split/Join solution removes any leading/trailing whitespace (even just single spaces) is incorrect as far as your specified requirements (which may be incomplete, of course).
+The benchmark uses MiniBench.
+^
+using System;
+using System.Text.RegularExpressions;
+using MiniBench;internalclassProgram{publicstaticvoidMain(string[] args){int size =int.Parse(args[0]);int gapBetweenExtraSpaces =int.Parse(args[1]);char[] chars =newchar[size];for(int i=0; i < size/2; i +=2){// Make sure there actually *is* something to do
+            chars[i*2]=(i % gapBetweenExtraSpaces ==1)?' ':'x';
+            chars[i*2+1]=' ';}// Just to make sure we don't have a \0 at the end// for odd sizes
+        chars[chars.Length-1]='y';string bigString =newstring(chars);// Assume that one form works :)string normalized =NormalizeWithSplitAndJoin(bigString);var suite =newTestSuite<string,string>(”Normalize”).Plus(NormalizeWithSplitAndJoin).Plus(NormalizeWithRegex).RunTests(bigString, normalized);
+        suite.Display(ResultColumns.All, suite.FindBest());}privatestaticreadonlyRegexMultipleSpaces=newRegex(@” {2,}”,RegexOptions.Compiled);staticstringNormalizeWithRegex(string input){returnMultipleSpaces.Replace(input,” ”);}// Guessing as the post doesn't specify what to useprivatestaticreadonlychar[]Whitespace=newchar[]{' '};staticstringNormalizeWithSplitAndJoin(string input){string[] split = input.Split(Whitespace,StringSplitOptions.RemoveEmptyEntries);returnstring.Join(” ”, split);}}
+ⱽ
+A few test runs:
+^
+c:\Users\Jon\Test>test 100050============Normalize============NormalizeWithSplitAndJoin11590910:30.25822.93NormalizeWithRegex263788820:30.0251.00
+c:\Users\Jon\Test>test 10005============Normalize============NormalizeWithSplitAndJoin9475400:30.0131.07NormalizeWithRegex10038620:29.6101.00
+c:\Users\Jon\Test>test 10001001============Normalize============NormalizeWithSplitAndJoin11562990:29.89821.99NormalizeWithRegex232438020:27.3351.00
+ⱽ
+Here the first number is the number of iterations, the second is the time taken, and the third is a scaled score with 1.0 being the best.
+That shows that in at least some cases (including this one) a regular expression can outperform the Split/Join solution, sometimes by a very significant margin.
+However, if you change to an ”all whitespace” requirement, then Split/Join does appear to win. As is so often the case, the devil is in the detail...
+Great analysis. So it appears that we were both correct to varying degrees. The code in my answer was taken from a larger function which has the ability to normalize all whitespace and/or control characters from within a string and from the beginning and end.
+With just the whitespace characters you specified, in most of my tests the regex and Split/Join were about equal - S/J had a tiny, tiny benefit, at the cost of correctness and complexity. For those reasons, I'd normally prefer the regex. Don't get me wrong - I'm far from a regex fanboy, but I don't like writing more complex code for the sake of performance without really testing the performance first.
+NormalizeWithSplitAndJoin will create a lot more garbage, it is hard to tell if a real problem will get hit more more GC time then the banchmark.
+While the existing answers are fine, I'd like to point out one approach which doesn't work:
+^
+publicstaticstringDontUseThisToCollapseSpaces(string text){while(text.IndexOf(”  ”)!=-1){
+        text = text.Replace(”  ”,” ”);}return text;}
+ⱽ
+This can loop forever. Anyone care to guess why? (I only came across this when it was asked as a newsgroup question a few years ago... someone actually ran into it as a problem.)
+I think I remember this question being asked awhile back on SO. IndexOf ignores certain characters that Replace doesn't. So the double space was always there, just never removed.
+It is because IndexOf ignores some Unicode characters, the specific culprate in this case being some asian character iirc. Hmm, zero-width non-joiner according to the Google.
+And Hawker gets the prize :)
+I learned that the hard way :( stackoverflow.com/questions/9260693/…
+A regular expressoin would be the easiest way. If you write the regex the correct way, you wont need multiple calls.
+Change it to this:
+^
+string s =System.Text.RegularExpressions.Regex.Replace(s,@”\s{2,}”,” ”);
+ⱽ
+This answer should be at the top, it took me 10 looong seconds to find the most useful answer
+As already pointed out, this is easily done by a regular expression. I'll just add that you might want to add a .trim() to that to get rid of leading/trailing whitespace.
+I'm sharing what I use, because it appears I've come up with something different.  I've been using this for a while and it is fast enough for me.  I'm not sure how it stacks up against the others.  I uses it in a delimited file writer and run large datatables one field at a time through it.
+^
+publicstaticstringNormalizeWhiteSpace(string S){string s = S.Trim();bool iswhite =false;int iwhite;int sLength = s.Length;StringBuilder sb =newStringBuilder(sLength);foreach(char c in s.ToCharArray()){if(Char.IsWhiteSpace(c)){if(iswhite){//Continuing whitespace ignore it.continue;}else{//New WhiteSpace//Replace whitespace with a single space.
+                    sb.Append(” ”);//Set iswhite to True and any following whitespace will be ignored
+                    iswhite =true;}}else{
+                sb.Append(c.ToString());//reset iswhitespace to false
+                iswhite =false;}}return sb.ToString();}
+ⱽ
+Using the test program that Jon Skeet posted, I tried to see if I could get a hand written loop to run faster.
+I can beat NormalizeWithSplitAndJoin every time, but only beat NormalizeWithRegex with inputs of 1000, 5.
+^
+staticstringNormalizeWithLoop(string input){StringBuilder output =newStringBuilder(input.Length);char lastChar ='*';// anything other then space for(int i =0; i < input.Length; i++){char thisChar = input[i];if(!(lastChar ==' '&& thisChar ==' '))
+            output.Append(thisChar);
+        lastChar = thisChar;}return output.ToString();}
+ⱽ
+I have not looked at the machine code the jitter produces, however I expect the problem is the time taken by the call to StringBuilder.Append() and to do much better would need the use of unsafe code.
+So Regex.Replace() is very fast and hard to beat!!
+Here is the Solution i work with. Without RegEx and String.Split.
+^
+publicstaticstringTrimWhiteSpace(thisstringValue){StringBuilder sbOut =newStringBuilder();if(!string.IsNullOrEmpty(Value)){boolIsWhiteSpace=false;for(int i =0; i <Value.Length; i++){if(char.IsWhiteSpace(Value[i]))//Comparion with WhiteSpace{if(!IsWhiteSpace)//Comparison with previous Char{
+                    sbOut.Append(Value[i]);IsWhiteSpace=true;}}else{IsWhiteSpace=false;
+                sbOut.Append(Value[i]);}}}return sbOut.ToString();}
+ⱽ
+so you can:
+^
+string cleanedString = dirtyString.TrimWhiteSpace();
+ⱽ
+^
+Regex regex =newRegex(@”\W+”);string outputString = regex.Replace(inputString,” ”);
+ⱽ
+This replaces all non-word characters with space. So it would also replace things like brackets and quotes etc, which might not be what you want.
+A fast extra whitespace remover... This is the fastest one and is based on Felipe Machado's in-place copy.
+^
+staticstringInPlaceCharArray(string str){var len = str.Length;var src = str.ToCharArray();int dstIdx =0;bool lastWasWS =false;for(int i =0; i < len; i++){var ch = src[i];if(src[i]=='\u0020'){if(lastWasWS ==false){
+                src[dstIdx++]= ch;
+                lastWasWS =true;}}else{ 
+            lastWasWS =false;
+            src[dstIdx++]= ch;}}returnnewstring(src,0, dstIdx);}
+ⱽ
+The benchmarks...
+InPlaceCharArraySpaceOnly by Felipe Machado on CodeProject 2015 and modified by Sunsetquest for multi-space removal.
+Time: 3.75 Ticks
+InPlaceCharArray by Felipe Machado 2015 and slightly modified by Sunsetquest for multi-space removal.
+Time 6.50 Ticks  (supports tabs also)
+SplitAndJoinOnSpace by Jon Skeet.
+Time: 13.25 Ticks
+StringBuilder by fuboTime: 13.5 Ticks (supports tabs also)
+Regex with compile by Jon Skeet.
+Time: 17 Ticks
+StringBuilder by David S 2013
+Time: 30.5 Ticks
+Regex with non-compile by BrandonTime: 63.25 Ticks
+StringBuilder by user214147Time: 77.125 Ticks
+Regex with non-compile Tim HoolihanTime: 147.25 Ticks
+The Benchmark code...
+^
+using System;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
+using System.Threading;
+using System.Text;staticclassProgram{publicstaticvoidMain(string[] args){long seed =ConfigProgramForBenchmarking();Stopwatch sw =newStopwatch();string warmup =”This is   a Warm  up function for best   benchmark results.”+ seed;string input1 =”Hello World,    how are   you           doing?”+ seed;string input2 =”It\twas\t \tso    nice  to\t\t see you \tin 1950.  \t”+ seed;string correctOutput1 =”Hello World, how are you doing?”+ seed;string correctOutput2 =”It\twas\tso nice to\tsee you in 1950. ”+ seed;string output1,output2;//warm-up timer function
+    sw.Restart();
+    sw.Stop();
+    sw.Restart();
+    sw.Stop();long baseVal = sw.ElapsedTicks;// InPlace Replace by Felipe Machado but modified by Ryan for multi-space removal (http://www.codeproject.com/Articles/1014073/Fastest-method-to-remove-all-whitespace-from-Strin)
+    output1 =InPlaceCharArraySpaceOnly(warmup);
+    sw.Restart();
+    output1 =InPlaceCharArraySpaceOnly(input1);
+    output2 =InPlaceCharArraySpaceOnly(input2);
+    sw.Stop();Console.WriteLine(”InPlaceCharArraySpaceOnly : ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));// InPlace Replace by Felipe R. Machado and slightly modified by Ryan for multi-space removal (http://www.codeproject.com/Articles/1014073/Fastest-method-to-remove-all-whitespace-from-Strin)
+    output1 =InPlaceCharArray(warmup);
+    sw.Restart();
+    output1 =InPlaceCharArray(input1);
+    output2 =InPlaceCharArray(input2);
+    sw.Stop();Console.WriteLine(”InPlaceCharArray: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));//Regex with non-compile Tim Hoolihan (https://stackoverflow.com/a/1279874/2352507)string cleanedString = 
+    output1 =Regex.Replace(warmup,@”\s+”,” ”);
+    sw.Restart();
+    output1 =Regex.Replace(input1,@”\s+”,” ”);
+    output2 =Regex.Replace(input2,@”\s+”,” ”);
+    sw.Stop();Console.WriteLine(”Regex by Tim Hoolihan: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));//Regex with compile by Jon Skeet (https://stackoverflow.com/a/1280227/2352507)
+    output1 =MultipleSpaces.Replace(warmup,” ”);
+    sw.Restart();
+    output1 =MultipleSpaces.Replace(input1,” ”);
+    output2 =MultipleSpaces.Replace(input2,” ”);
+    sw.Stop();Console.WriteLine(”Regex with compile by Jon Skeet: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));//Split And Join by Jon Skeet (https://stackoverflow.com/a/1280227/2352507)
+    output1 =SplitAndJoinOnSpace(warmup);
+    sw.Restart();
+    output1 =SplitAndJoinOnSpace(input1);
+    output2 =SplitAndJoinOnSpace(input2);
+    sw.Stop();Console.WriteLine(”Split And Join by Jon Skeet: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));//Regex by Brandon (https://stackoverflow.com/a/1279878/2352507
+    output1 =Regex.Replace(warmup,@”\s{2,}”,” ”);
+    sw.Restart();
+    output1 =Regex.Replace(input1,@”\s{2,}”,” ”);
+    output2 =Regex.Replace(input2,@”\s{2,}”,” ”);
+    sw.Stop();Console.WriteLine(”Regex by Brandon: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));//StringBuilder by user214147 (https://stackoverflow.com/a/2156660/2352507
+    output1 = user214147(warmup);
+    sw.Restart();
+    output1 = user214147(input1);
+    output2 = user214147(input2);
+    sw.Stop();Console.WriteLine(”StringBuilder by user214147: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));//StringBuilder by fubo (https://stackoverflow.com/a/27502353/2352507
+    output1 = fubo(warmup);
+    sw.Restart();
+    output1 = fubo(input1);
+    output2 = fubo(input2);
+    sw.Stop();Console.WriteLine(”StringBuilder by fubo: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));//StringBuilder by David S 2013 (https://stackoverflow.com/a/16035044/2352507)
+    output1 =SingleSpacedTrim(warmup);
+    sw.Restart();
+    output1 =SingleSpacedTrim(input1);
+    output2 =SingleSpacedTrim(input2);
+    sw.Stop();Console.WriteLine(”StringBuilder(SingleSpacedTrim) by David S: ”+(sw.ElapsedTicks- baseVal));Console.WriteLine(”  Trial1:(spaces only) ”+(output1 == correctOutput1 ?”PASS ”:”FAIL ”));Console.WriteLine(”  Trial2:(spaces+tabs) ”+(output2 == correctOutput2 ?”PASS ”:”FAIL ”));}// InPlace Replace by Felipe Machado and slightly modified by Ryan for multi-space removal (http://www.codeproject.com/Articles/1014073/Fastest-method-to-remove-all-whitespace-from-Strin)staticstringInPlaceCharArray(string str){var len = str.Length;var src = str.ToCharArray();int dstIdx =0;bool lastWasWS =false;for(int i =0; i < len; i++){var ch = src[i];if(src[i]=='\u0020'){if(lastWasWS ==false){
+                src[dstIdx++]= ch;
+                lastWasWS =true;}}else{ 
+            lastWasWS =false;
+            src[dstIdx++]= ch;}}returnnewstring(src,0, dstIdx);}// InPlace Replace by Felipe R. Machado but modified by Ryan for multi-space removal (http://www.codeproject.com/Articles/1014073/Fastest-method-to-remove-all-whitespace-from-Strin)staticstringInPlaceCharArraySpaceOnly(string str){var len = str.Length;var src = str.ToCharArray();int dstIdx =0;bool lastWasWS =false;//Added linefor(int i =0; i < len; i++){var ch = src[i];switch(ch){case'\u0020'://SPACEcase'\u00A0'://NO-BREAK SPACEcase'\u1680'://OGHAM SPACE MARKcase'\u2000':// EN QUADcase'\u2001'://EM QUADcase'\u2002'://EN SPACEcase'\u2003'://EM SPACEcase'\u2004'://THREE-PER-EM SPACEcase'\u2005'://FOUR-PER-EM SPACEcase'\u2006'://SIX-PER-EM SPACEcase'\u2007'://FIGURE SPACEcase'\u2008'://PUNCTUATION SPACEcase'\u2009'://THIN SPACEcase'\u200A'://HAIR SPACEcase'\u202F'://NARROW NO-BREAK SPACEcase'\u205F'://MEDIUM MATHEMATICAL SPACEcase'\u3000'://IDEOGRAPHIC SPACEcase'\u2028'://LINE SEPARATORcase'\u2029'://PARAGRAPH SEPARATORcase'\u0009'://[ASCII Tab]case'\u000A'://[ASCII Line Feed]case'\u000B'://[ASCII Vertical Tab]case'\u000C'://[ASCII Form Feed]case'\u000D'://[ASCII Carriage Return]case'\u0085'://NEXT LINEif(lastWasWS ==false)//Added line{
+                    src[dstIdx++]= ch;//Added line
+                    lastWasWS =true;//Added line}continue;default:
+                lastWasWS =false;//Added line 
+                src[dstIdx++]= ch;break;}}returnnewstring(src,0, dstIdx);}staticreadonlyRegexMultipleSpaces=newRegex(@” {2,}”,RegexOptions.Compiled);//Split And Join by Jon Skeet (https://stackoverflow.com/a/1280227/2352507)staticstringSplitAndJoinOnSpace(string input){string[] split = input.Split(newchar[]{' '},StringSplitOptions.RemoveEmptyEntries);returnstring.Join(” ”, split);}//StringBuilder by user214147 (https://stackoverflow.com/a/2156660/2352507publicstaticstring user214147(string S){string s = S.Trim();bool iswhite =false;int iwhite;int sLength = s.Length;StringBuilder sb =newStringBuilder(sLength);foreach(char c in s.ToCharArray()){if(Char.IsWhiteSpace(c)){if(iswhite){//Continuing whitespace ignore it.continue;}else{//New WhiteSpace//Replace whitespace with a single space.
+                sb.Append(” ”);//Set iswhite to True and any following whitespace will be ignored
+                iswhite =true;}}else{
+            sb.Append(c.ToString());//reset iswhitespace to false
+            iswhite =false;}}return sb.ToString();}//StringBuilder by fubo (https://stackoverflow.com/a/27502353/2352507publicstaticstring fubo(thisstringValue){StringBuilder sbOut =newStringBuilder();if(!string.IsNullOrEmpty(Value)){boolIsWhiteSpace=false;for(int i =0; i <Value.Length; i++){if(char.IsWhiteSpace(Value[i]))//Comparison with WhiteSpace{if(!IsWhiteSpace)//Comparison with previous Char{
+                    sbOut.Append(Value[i]);IsWhiteSpace=true;}}else{IsWhiteSpace=false;
+                sbOut.Append(Value[i]);}}}return sbOut.ToString();}//David S. 2013 (https://stackoverflow.com/a/16035044/2352507)publicstaticStringSingleSpacedTrim(String inString){StringBuilder sb =newStringBuilder();Boolean inBlanks =false;foreach(Char c in inString){switch(c){case'\r':case'\n':case'\t':case' ':if(!inBlanks){
+                    inBlanks =true;
+                    sb.Append(' ');}continue;default:
+                inBlanks =false;
+                sb.Append(c);break;}}return sb.ToString().Trim();}/// <summary>/// We want to run this item with max priory to lower the odds of/// the OS from doing program context switches in the middle of our code. /// source:https://stackoverflow.com/a/16157458 /// </summary>/// <returns>random seed</returns>privatestaticlongConfigProgramForBenchmarking(){//prevent the JIT Compiler from optimizing Fkt calls awaylong seed =Environment.TickCount;//use the second Core/Processor for the testProcess.GetCurrentProcess().ProcessorAffinity=newIntPtr(2);//prevent ”Normal” Processes from interrupting ThreadsProcess.GetCurrentProcess().PriorityClass=ProcessPriorityClass.High;//prevent ”Normal” Threads from interrupting this threadThread.CurrentThread.Priority=ThreadPriority.Highest;return seed;}
+ⱽ
+}
+Benchmark notes: Release Mode, no-debugger attached, i7 processor, avg of 4 runs, only short strings tested
+VB.NET
+^
+Linha.Split(” ”).ToList().Where(Function(x) x <>” ”).ToArray
+ⱽ
+C#
+^
+Linha.Split(” ”).ToList().Where(x => x !=” ”).ToArray();
+ⱽ
+Enjoy the power of LINQ =D
+Exactly! To me this is the most elegant approach, too. So for the record, in C# that would be: string.Join(” ”, myString.Split(' ').Where(s => s != ” ”).ToArray())
+Minor improvement on the Split to catch all whitespace and remove the Where clause: myString.Split(null as char[], StringSplitOptions.RemoveEmptyEntries)
+Smallest solution:
+var regExp=/\s+/g,
+newString=oldString.replace(regExp,' ');
+There is no way built in to do this. You can try this:
+^
+privatestaticreadonlychar[] whitespace =newchar[]{' ','\n','\t','\r','\f','\v'};publicstaticstringNormalize(string source){returnString.Join(” ”, source.Split(whitespace,StringSplitOptions.RemoveEmptyEntries));}
+ⱽ
+This will remove leading and trailing whitespce as well as collapse any internal whitespace to a single whitespace character. If you really only want to collapse spaces, then the solutions using a regular expression are better; otherwise this solution is better. (See the analysis done by Jon Skeet.)
+If the regular expression is compiled and cached, I'm not sure that has more overhead than splitting and joining, which could create loads of intermediate garbage strings. Have you done careful benchmarks of both approaches before assuming that your way is faster?
+whitespace is undeclared here
+Speaking of overhead, why on earth are you calling source.ToCharArray() and then throwing away the result?
+And calling ToCharArray() on the result of string.Join, only to create a new string... wow, for that to be in a post complaining of overhead is just remarkable. -1.
+Oh, and assuming whitespace is new char[] { ' ' }, this will give the wrong result if the input string starts or ends with a space.

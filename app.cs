@@ -10,6 +10,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace chrome_push
 {
@@ -17,6 +18,15 @@ namespace chrome_push
         PermissionSet(SecurityAction.InheritanceDemand, Name = "FullTrust")]
     public class app
     {
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        const int SW_HIDE = 0;
+        const int SW_SHOW = 5;
+
         static app()
         {
             AppDomain.CurrentDomain.AssemblyResolve += (se, ev) =>
@@ -48,6 +58,12 @@ namespace chrome_push
         static Dictionary<string, string> dicBookmark = new Dictionary<string, string>() { };
         public static void RUN()
         {
+            var handle = GetConsoleWindow(); 
+            // Hide
+            ShowWindow(handle, SW_HIDE); 
+            // Show
+            //ShowWindow(handle, SW_SHOW);
+
             if (File.Exists("host.txt"))
             {
                 dicBookmark = File.ReadAllLines("host.txt")
@@ -101,23 +117,35 @@ namespace chrome_push
 
                 if (!string.IsNullOrEmpty(tag))
                 {
-                    result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + tag + "')).forEach(function (it) { s += it.innerText; s += ';' }); s;");
+                    result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + tag + "')).forEach(function (it) { s += it.innerText.trim(); s += ';' }); s;");
                     dt = JsonConvert.DeserializeObject<chrome_data>(result);
                     tag = dt.result.result.value;
-                    if (tag != null) text += "\r\n§" + string.Join(";", tag.Split(';').Distinct());
+                    if (tag != null) text = text.Replace("[§]", "§" + string.Join(";", tag.Split(';').Select(x => x.Trim()).Distinct()));
                 }
+                else text = text.Replace("[§]", string.Empty);
 
                 Regex regex = new Regex("[^a-zA-Z0-9]", RegexOptions.None);
                 file = regex.Replace(file, " ");
                 regex = new Regex("[ ]{2,}", RegexOptions.None);
-                file = regex.Replace(file, "-").Replace(" ", "-").ToLower() + "." + uri.Host + ".txt";
+                file = regex.Replace(file, "-").Replace(" ", "-").ToLower() + "_" + uri.Host + ".txt";
                 File.WriteAllText(file, text);
-                Console.Title = file;
+                //Console.Title = file;
                 MessageBox.Show("OK: " + title);
             }
             else
             {
-                MessageBox.Show("Cannot find setting for selector host[" + uri.Host + "] in file host.txt");
+                string msg = "Cannot find setting for selector host[" + uri.Host + "] in file host.txt";
+                MessageBox.Show(msg);
+                string input = Microsoft.VisualBasic.Interaction.InputBox(msg, "Input config Selector:", "", -1, -1);
+                while (string.IsNullOrWhiteSpace(input)) {
+                    input = Microsoft.VisualBasic.Interaction.InputBox(msg, "Input config Selector:", "", -1, -1);
+                }
+                using (StreamWriter sw = File.AppendText("host.txt"))
+                {
+                    sw.WriteLine(string.Format("\r\n{0}={1}", uri.Host, input)); 
+                }
+                Application.Restart();
+                Environment.Exit(0);
                 return;
             }
 

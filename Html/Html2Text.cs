@@ -40,12 +40,13 @@ namespace chrome_push
             ////////        }
             ////////    }
             ////////}
-            result = result.Replace(@"""", "”");
-
-            result = string.Join(Environment.NewLine, result.Split(new char[] { '\r', '\n' })
+            result = result.Replace(@"""", "”").Replace(@"—", "-");
+            string[] a = result.Split(new char[] { '\r', '\n' })
                 //.Select(x => x.Trim())
                 .Where(x => x != string.Empty && !x.Contains("©"))
-                .ToArray());
+                .ToArray();
+            a[0] = a[0] + "[§]";
+            result = string.Join(Environment.NewLine, a);
 
             return result;
         }
@@ -96,11 +97,16 @@ namespace chrome_push
                             break;
                         case "ol":
                         case "ul":
+                        case "dl":
                             isList = true;
                             outText.Write("\r\n⌐\r\n");
                             break;
                         case "li":
+                        case "dt":
                             outText.Write("\r\n● ");
+                            break;
+                        case "dd":
+                            outText.Write("\r\n");
                             break;
                         case "div":
                             outText.Write("\r\n");
@@ -126,6 +132,12 @@ namespace chrome_push
                         case "h6":
                             isHeading = true;
                             outText.Write("\r\n■ ");
+                            break;
+                        case "tr":
+                            outText.Write("\r\n");
+                            break;
+                        case "td":
+                            outText.Write("; ");
                             break;
                         case "h1":
                             hasH1 = true;

@@ -2,3 +2,6 @@ msdn.microsoft.com=#mainBody
 w2ui.com=.obj-desc
 github.com=.markdown-body.entry-content
 stackoverflow.com=h1, div.post-text, span.comment-copy¦a.post-tag
+developers.google.com=h1.devsite-page-title, div.devsite-article-body
+
+developer.mozilla.org=h1, #wikiArticle

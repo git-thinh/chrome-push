@@ -1,0 +1,56 @@
+Show/Hide the console window of a C# console application§c#;console;console-application;
+I googled around for information on how to hide one’s own console window. Amazingly, the only solutions I could find were hacky solutions that involved FindWindow() to find the console window by its title. I dug a bit deeper into the Windows API and found that there is a much better and easier way, so I wanted to post it here for others to find.
+How do you hide (and show) the console window associated with my own C# console application?
+Here’s how:
+^
+using System.Runtime.InteropServices;
+ⱽ
+^
+[DllImport(”kernel32.dll”)]staticexternIntPtrGetConsoleWindow();[DllImport(”user32.dll”)]staticexternboolShowWindow(IntPtr hWnd,int nCmdShow);constint SW_HIDE =0;constint SW_SHOW =5;
+ⱽ
+^
+var handle =GetConsoleWindow();// HideShowWindow(handle, SW_HIDE);// ShowShowWindow(handle, SW_SHOW);
+ⱽ
+The window still appears momentarily at the beginning. I guess there is no way around this, unless the application type is changed?
+It would be nice if there was a way around that.  That way I can show the console when I am in debug mode, but just run my program and exit (with no window) when I am in normal run mode.
+@Vaccano: It is possible to make your application a console application in Debug mode only by editing the csproj file manually. Visual Studio doesn’t have GUI to do this, but it will honour the setting if you edit the csproj file correctly.
+Need: using System.Runtime.InteropServices;
+Where do I use this code in the console application?
+Just go to the application's Properties and change the Output type from Console Application to Windows Application.
+Even though this does not answer the OP's question, I really appreciate you giving this answer. It was exactly what I needed :)
+u made my day :) Thanks
+I think THIS should be the accepted solution!
+This is not solution, because this way window cannot be shown.
+This is not a solution to what the poster asked.
+Why do you need a console application if you want to hide console itself? =)
+I recommend setting Project Output type to Windows Application instead of Console application. It will not show you console window, but execute all actions, like Console application do.
+Because there might come a time when I do actually want to show it. Like, the console application tries to perform stuff and doesn't bother anyone aslong as it is successful. If not, it pops up and offers me a CLI.
+You could do the reversed and set the Application output type to: Windows Application. Then add this code to the beginning of the application.
+^
+[DllImport(”kernel32.dll”,EntryPoint=”GetStdHandle”,SetLastError=true,CharSet=CharSet.Auto,CallingConvention=CallingConvention.StdCall)]publicstaticexternIntPtrGetStdHandle(int nStdHandle);[DllImport(”kernel32.dll”,EntryPoint=”AllocConsole”,SetLastError=true,CharSet=CharSet.Auto,CallingConvention=CallingConvention.StdCall)]publicstaticexternintAllocConsole();privateconstint STD_OUTPUT_HANDLE =-11;privateconstint MY_CODE_PAGE =437;privatestaticbool showConsole =true;//Or false if you don't want to see the consolestaticvoidMain(string[] args){if(showConsole){AllocConsole();IntPtr stdHandle =GetStdHandle(STD_OUTPUT_HANDLE);Microsoft.Win32.SafeHandles.SafeFileHandle safeFileHandle =newMicrosoft.Win32.SafeHandles.SafeFileHandle(stdHandle,true);FileStream fileStream =newFileStream(safeFileHandle,FileAccess.Write);System.Text.Encoding encoding =System.Text.Encoding.GetEncoding(MY_CODE_PAGE);StreamWriter standardOutput =newStreamWriter(fileStream, encoding);
+        standardOutput.AutoFlush=true;Console.SetOut(standardOutput);}//Your application code}
+ⱽ
+This code will show the Console if showConsole is true
+See my post here:
+Show Console in Windows Application
+You can make a Windows application (with or without the window) and show the console as desired.  Using this method the console window never appears unless you explicitly show it.  I use it for dual-mode applications that I want to run in either console or gui mode depending on how they are opened.
+perfect, thank you!
+Excellent! the easiest way to hide console is to change project type to Windows application.
+If you don't want to depends on window title use this :
+^
+[DllImport(”user32.dll”)]staticexternboolShowWindow(IntPtr hWnd,int nCmdShow);
+ⱽ
+...
+^
+IntPtr h =Process.GetCurrentProcess().MainWindowHandle;ShowWindow(h,0);Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);Application.Run(newFormPrincipale());
+ⱽ
+we have to give full path of dll file in DllImport(”fullPath”) /
+If you don't have a problem integrating a small batch application, there is this program called Cmdow.exe that will allow you to hide console windows based on console title.
+^
+Console.Title=”MyConsole”;System.Diagnostics.ProcessHideConsole=newSystem.Diagnostics.Process();HideConsole.StartInfo.UseShellExecute=false;HideConsole.StartInfo.Arguments=”MyConsole /hid”;HideConsole.StartInfo.FileName=”cmdow.exe”;HideConsole.Start();
+ⱽ
+Add the exe to the solution, set the build action to ”Content”, set Copy to Output Directory to what suits you, and cmdow will hide the console window when it is ran.
+To make the console visible again, you just change the Arguments
+^
+HideConsole.StartInfo.Arguments=”MyConsole /Vis”;
+ⱽ
