@@ -47,6 +47,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -60,16 +61,61 @@
   <ItemGroup>
     <Compile Include="app.cs" />
     <Compile Include="chrome\Chrome.cs" />
+    <Compile Include="chrome\chrome_result.cs" />
     <Compile Include="chrome\IChromeRequest.cs" />
     <Compile Include="chrome\IChromeResponse.cs" />
     <Compile Include="chrome\RemoteSessions.cs" />
+    <Compile Include="English\TiengViet.cs" />
+    <Compile Include="English\Translator.cs" />
+    <Compile Include="Html\Html2Text.cs" />
+    <Compile Include="Html\HtmlAgilityPack\crc32.cs" />
+    <Compile Include="Html\HtmlAgilityPack\EncodingFoundException.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlAttribute.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlAttributeCollection.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlCmdLine.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlCommentNode.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlConsoleListener.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlDocument.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlDocument.PathMethods.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlDocument.Xpath.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlElementFlag.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlEntity.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlNameTable.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlNode.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlNode.Encapsulator.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlNode.Xpath.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlNodeCollection.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlNodeNavigator.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlNodeType.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlParseError.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlParseErrorCode.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlTextNode.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlWeb.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlWeb.Xpath.cs" />
+    <Compile Include="Html\HtmlAgilityPack\HtmlWebException.cs" />
+    <Compile Include="Html\HtmlAgilityPack\InvalidProgramException.cs" />
+    <Compile Include="Html\HtmlAgilityPack\IOLibrary.cs" />
+    <Compile Include="Html\HtmlAgilityPack\Metro\HtmlWeb.cs" />
+    <Compile Include="Html\HtmlAgilityPack\Metro\InvalidProgramException.cs" />
+    <Compile Include="Html\HtmlAgilityPack\MixedCodeDocument.cs" />
+    <Compile Include="Html\HtmlAgilityPack\MixedCodeDocumentCodeFragment.cs" />
+    <Compile Include="Html\HtmlAgilityPack\MixedCodeDocumentFragment.cs" />
+    <Compile Include="Html\HtmlAgilityPack\MixedCodeDocumentFragmentList.cs" />
+    <Compile Include="Html\HtmlAgilityPack\MixedCodeDocumentFragmentType.cs" />
+    <Compile Include="Html\HtmlAgilityPack\MixedCodeDocumentTextFragment.cs" />
+    <Compile Include="Html\HtmlAgilityPack\NameValuePair.cs" />
+    <Compile Include="Html\HtmlAgilityPack\NameValuePairList.cs" />
+    <Compile Include="Html\HtmlAgilityPack\Trace.cs" />
+    <Compile Include="Html\HtmlAgilityPack\Trace.FullFramework.cs" />
+    <Compile Include="Html\HtmlAgilityPack\Utilities.cs" />
+    <Compile Include="Html\HtmlConvert.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="DLL\Newtonsoft.Json.dll" />
-    <Resource Include="DLL\SocketIOClient.dll" />
-    <Resource Include="DLL\SuperSocket.ClientEngine.dll" />
-    <Resource Include="DLL\WebSocket4Net.dll" />
+    <EmbeddedResource Include="DLL\Newtonsoft.Json.dll" />
+    <EmbeddedResource Include="DLL\SocketIOClient.dll" />
+    <EmbeddedResource Include="DLL\SuperSocket.ClientEngine.dll" />
+    <EmbeddedResource Include="DLL\WebSocket4Net.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

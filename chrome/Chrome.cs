@@ -75,7 +75,7 @@ namespace chrome_push
 
         public string SendCommand(string cmd)
         {
-            WebSocket4Net.WebSocket j = new WebSocket4Net.WebSocket(this.sessionWSEndpoint);
+            WebSocket j = new WebSocket(this.sessionWSEndpoint);
             ManualResetEvent waitEvent = new ManualResetEvent(false);
             ManualResetEvent closedEvent = new ManualResetEvent(false);
             string message = "";
