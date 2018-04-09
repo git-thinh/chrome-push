@@ -1,0 +1,3 @@
+msdn.microsoft.com=#mainBody
+w2ui.com=.obj-desc
+github.com=.markdown-body.entry-content
