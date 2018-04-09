@@ -1,0 +1,144 @@
+How do I replace multiple spaces with a single space in C#?
+How can I replace multiple spaces in a string with only one space in C#?
+Example:
+^
+12345
+ⱽ
+would be:
+^
+12345
+ⱽ
+^
+RegexOptions options =RegexOptions.None;Regex regex =newRegex(”[ ]{2,}”, options);     
+tempo = regex.Replace(tempo,” ”);
+ⱽ
+I like to use:
+^
+myString =Regex.Replace(myString,@”\s+”,” ”);
+ⱽ
+Since it will catch runs of any kind of whitespace (e.g. tabs, newlines, etc.) and replace them with a single space.
+I think Matt's answer is the best, but I don't believe it's quite right.  If you want to replace newlines, you must use:
+^
+myString =Regex.Replace(myString,@”\s+”,” ”,RegexOptions.Multiline);
+ⱽ
+^
+string xyz =”1   2   3   4   5”;
+xyz =string.Join(” ”, xyz.Split(newchar[]{' '},StringSplitOptions.RemoveEmptyEntries));
+ⱽ
+Another approach which uses LINQ:
+^
+varlist= str.Split(' ').Where(s =>!string.IsNullOrWhiteSpace(s));
+ str =string.Join(” ”,list);
+ⱽ
+It's much simpler than all that:
+^
+while(str.Contains(”  ”)) str = str.Replace(”  ”,” ”);
+ⱽ
+^
+myString =Regex.Replace(myString,” {2,}”,” ”);
+ⱽ
+Regex can be rather slow even with simple tasks.  This creates an extension method that can be used off of any string.        
+^
+publicstaticclassStringExtension{publicstaticStringReduceWhitespace(thisString value){var newString =newStringBuilder();bool previousIsWhitespace =false;for(int i =0; i < value.Length; i++){if(Char.IsWhiteSpace(value[i])){if(previousIsWhitespace){continue;}
+                    previousIsWhitespace =true;}else{
+                    previousIsWhitespace =false;}
+                newString.Append(value[i]);}return newString.ToString();}}
+ⱽ
+It would be used as such:
+^
+string testValue =”This contains     too          much  whitespace.”
+testValue = testValue.ReduceWhitespace();// testValue = ”This contains too much whitespace.”
+ⱽ
+You can simply do this in one line solution!
+^
+string s =”welcome to  london”;
+s.Replace(” ”,”()”).Replace(”)(”,””).Replace(”()”,” ”);
+ⱽ
+You can choose other brackets (or even other characters) if you like.
+For those, who don't like Regex, here is a method that uses the StringBuilder:
+^
+publicstaticstringFilterWhiteSpaces(string input){if(input ==null)returnstring.Empty;StringBuilder stringBuilder =newStringBuilder(input.Length);for(int i =0; i < input.Length; i++){char c = input[i];if(i ==0|| c !=' '||(c ==' '&& input[i -1]!=' '))
+                stringBuilder.Append(c);}return stringBuilder.ToString();}
+ⱽ
+In my tests, this method was 16 times faster on average with a very large set of small-to-medium sized strings, compared to a static compiled Regex. Compared to a non-compiled or non-static Regex, this should be even faster.
+Keep in mind, that it does not remove leading or trailing spaces, only multiple occurrences of such.
+Consolodating other answers, per Joel, and hopefully improving slightly as I go:
+You can do this with Regex.Replace():
+^
+string s =Regex.Replace(”   1  2    4 5”,@”[ ]{2,}”,” ”);
+ⱽ
+Or with String.Split():
+^
+staticclassStringExtensions{publicstaticstringJoin(thisIList<string> value,string separator){returnstring.Join(separator, value.ToArray());}}//...string s =”     1  2    4 5”.Split(” ”.ToCharArray(),StringSplitOptions.RemoveEmptyEntries).Join(” ”);
+ⱽ
+This is a shorter version, which should only be used if you are only doing this once, as it creates a new instance of the Regex class every time it is called.
+^
+temp =newRegex(” {2,}”).Replace(temp,” ”);
+ⱽ
+If you are not too acquainted with regular expressions, here's a short explanation:
+The {2,} makes the regex search for the character preceding it, and finds substrings between 2 and unlimited times.
+The .Replace(temp, ” ”) replaces all matches in the string temp with a space.
+If you want to use this multiple times, here is a better option, as it creates the regex IL at compile time:
+^
+Regex singleSpacify =newRegex(” {2,}”,RegexOptions.Compiled);
+temp = singleSpacify.Replace(temp,” ”);
+ⱽ
+I just wrote a new Join that I like, so I thought I'd re-answer, with it:
+^
+publicstaticstringJoin<T>(thisIEnumerable<T> source,string separator){returnstring.Join(separator, source.Select(e => e.ToString()).ToArray());}
+ⱽ
+One of the cool things about this is that it work with collections that aren't strings, by calling ToString() on the elements.  Usage is still the same:
+^
+//...string s =”     1  2    4 5”.Split(” ”.ToCharArray(),StringSplitOptions.RemoveEmptyEntries).Join(” ”);
+ⱽ
+I know this is pretty old, but ran across this while trying to accomplish almost the same thing. Found this solution in RegEx Buddy. This pattern will replace all double spaces with single spaces and also trim leading and trailing spaces.
+^
+pattern:(?m:^+|+$|(){2,})
+replacement: $1
+ⱽ
+Its a little difficult to read since we're dealing with empty space, so here it is again with the ”spaces” replaced with a ”_”. 
+^
+pattern:(?m:^_+|_+$|(_){2,})<-- don't use this, just for illustration.
+ⱽ
+The ”(?m:” construct enables the ”multi-line” option. I generally like to include whatever options I can within the pattern itself so it is more self contained.
+try this method
+^
+privatestring removeNestedWhitespaces(char[] st){StringBuilder sb =newStringBuilder();int indx =0, length = st.Length;while(indx < length){
+        sb.Append(st[indx]);
+        indx++;while(indx < length && st[indx]==' ')
+            indx++;}return sb.ToString();}
+ⱽ
+use it like this:  
+^
+string test = removeNestedWhitespaces(”1 2 3  4    5”.toCharArray());
+ⱽ
+Old skool:
+^
+string oldText =”   1 2  3   4    5     ”;string newText = oldText
+                    .Replace(”  ”,” ”+(char)22).Replace((char)22+” ”,””).Replace((char)22+””,””);Assert.That( newText,Is.EqualTo(” 1 2 3 4 5 ”));
+ⱽ
+I can remove whitespaces with this 
+^
+while word.contains(”  ”)//double space
+   word = word.Replace(”  ”,” ”);//replace double space by single space.
+word = word.trim();//to remove single whitespces from start & end.
+ⱽ
+Without using regular expressions:
+^
+while(myString.IndexOf(”  ”,StringComparison.CurrentCulture)!=-1){
+    myString = myString.Replace(”  ”,” ”);}
+ⱽ
+OK to use on short strings, but will perform badly on long strings with lots of spaces.
+no Regex, no Linq... removes leading and trailing spaces as well as reducing any embedded multiple space segments to one space
+^
+string myString =”   0 1 2  3   4               5  ”;
+myString =string.Join(” ”, myString.Split(newchar[]{' '},StringSplitOptions.RemoveEmptyEntries));
+ⱽ
+result:”0 1 2 3 4 5”
+Many answers are providing the right output but for those looking for the best performances, I did improve Nolanar's answer (which was the best answer for performance) by about 10%.
+^
+publicstaticstringMergeSpaces(thisstring str){if(str ==null){returnnull;}else{StringBuilder stringBuilder =newStringBuilder(str.Length);int i =0;foreach(char c in str){if(c !=' '|| i ==0|| str[i -1]!=' ')
+                stringBuilder.Append(c);
+            i++;}return stringBuilder.ToString();}}
+ⱽ
+§

@@ -1,3 +1,4 @@
 msdn.microsoft.com=#mainBody
 w2ui.com=.obj-desc
 github.com=.markdown-body.entry-content
+stackoverflow.com=h1, div.post-text, span.comment-copy¦a.post-tag

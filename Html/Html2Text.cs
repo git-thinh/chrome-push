@@ -115,6 +115,7 @@ namespace chrome_push
                             //////    }
                             //////}
                             break;
+                        case "hr":
                         case "p":
                             outText.Write("\r\n");
                             break;

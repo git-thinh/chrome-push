@@ -1,0 +1,1 @@
+var s = ''; Array.from(document.querySelectorAll('[###]')).forEach(function (it) { s += it.innerHTML; }); s;

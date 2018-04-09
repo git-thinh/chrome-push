@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace chrome_push
 {
@@ -60,29 +61,64 @@ namespace chrome_push
 
             var sessions = chrome.GetAvailableSessions();
             if (sessions.Count == 0) return;
-            var uri = new Uri(sessions[0].url);
+            int index = -1;
+            for (int i = 0; i < sessions.Count; i++)
+            {
+                if (sessions[i].url.StartsWith("http"))
+                {
+                    index = i;
+                    break;
+                }
+            }
+            if (index == -1) return;
+
+            var uri = new Uri(sessions[index].url);
             string selector = string.Empty;
             if (dicBookmark.ContainsKey(uri.Host)) selector = dicBookmark[uri.Host];
             if (!string.IsNullOrEmpty(selector))
-            { 
-                // Will drive first tab session
-                var sessionWSEndpoint = sessions[0].webSocketDebuggerUrl; 
-                chrome.SetActiveSession(sessionWSEndpoint); 
+            {
+                string[] a = selector.Split('¦');
+                selector = a[0];
+                string tag = string.Empty;
+                if (a.Length > 1) tag = a[1];
 
-                string result = chrome.Eval("var el = document.querySelector('" + selector + "'); el.innerHTML;");
+                // Will drive first tab session
+                var sessionWSEndpoint = sessions[index].webSocketDebuggerUrl;
+                chrome.SetActiveSession(sessionWSEndpoint);
+
+                string result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + selector + "')).forEach(function (it) { s += it.innerHTML; s += '<hr>' }); s;");
                 chrome_data dt = JsonConvert.DeserializeObject<chrome_data>(result);
                 string s = dt.result.result.value;
-                string text = new Html2Text().Convert(s).Trim();
-                string file = TiengViet.convertToUnSign2(text.Split(new char[] { '\r', '\n' })[0]);
+                if (string.IsNullOrEmpty(s))
+                {
+                    MessageBox.Show("Cannot get data from selector " + uri.Host + "=" + selector + " in file host.txt");
+                    return;
+                }
 
-                text += "\r\n§";
+                string text = new Html2Text().Convert(s).Trim();
+                string title = text.Split(new char[] { '\r', '\n' })[0];
+                string file = TiengViet.convertToUnSign2(title);
+
+                if (!string.IsNullOrEmpty(tag))
+                {
+                    result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + tag + "')).forEach(function (it) { s += it.innerText; s += ';' }); s;");
+                    dt = JsonConvert.DeserializeObject<chrome_data>(result);
+                    tag = dt.result.result.value;
+                    if (tag != null) text += "\r\n§" + string.Join(";", tag.Split(';').Distinct());
+                }
 
                 Regex regex = new Regex("[^a-zA-Z0-9]", RegexOptions.None);
                 file = regex.Replace(file, " ");
                 regex = new Regex("[ ]{2,}", RegexOptions.None);
-                file = regex.Replace(file, "-").Replace(" ","-").ToLower() + "." + uri.Host + ".txt";
+                file = regex.Replace(file, "-").Replace(" ", "-").ToLower() + "." + uri.Host + ".txt";
                 File.WriteAllText(file, text);
                 Console.Title = file;
+                MessageBox.Show("OK: " + title);
+            }
+            else
+            {
+                MessageBox.Show("Cannot find setting for selector host[" + uri.Host + "] in file host.txt");
+                return;
             }
 
 
@@ -113,7 +149,7 @@ namespace chrome_push
 
             //////result = chrome.Eval("document.forms[0].submit()");
 
-            Console.ReadLine();
+            //Console.ReadLine();
         }
     }
 
