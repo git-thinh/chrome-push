@@ -102,7 +102,10 @@ namespace chrome_push
                 var sessionWSEndpoint = sessions[index].webSocketDebuggerUrl;
                 chrome.SetActiveSession(sessionWSEndpoint);
 
-                string result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + selector + "')).forEach(function (it) { s += it.innerHTML; s += '<hr>' }); s;");
+                //string result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + selector + "')).forEach(function (it) { s += it.innerHTML; s += '<hr>' }); s;");
+                string js = string.Empty;
+                js = File.ReadAllText("-/" + uri.Host + ".js");
+                string result = chrome.Eval(js);
                 chrome_data dt = JsonConvert.DeserializeObject<chrome_data>(result);
                 string s = dt.result.result.value;
                 if (string.IsNullOrEmpty(s))
@@ -110,19 +113,19 @@ namespace chrome_push
                     MessageBox.Show("Cannot get data from selector " + uri.Host + "=" + selector + " in file host.txt");
                     return;
                 }
-
+                s = string.Join(Environment.NewLine, s.Split('¦'));
                 string text = new Html2Text().Convert(s).Trim();
                 string title = text.Split(new char[] { '\r', '\n' })[0];
                 string file = TiengViet.convertToUnSign2(title);
 
-                if (!string.IsNullOrEmpty(tag))
-                {
-                    result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + tag + "')).forEach(function (it) { s += it.innerText.trim(); s += ';' }); s;");
-                    dt = JsonConvert.DeserializeObject<chrome_data>(result);
-                    tag = dt.result.result.value;
-                    if (tag != null) text = text.Replace("[§]", "§" + string.Join(";", tag.Split(';').Select(x => x.Trim()).Distinct()));
-                }
-                else text = text.Replace("[§]", string.Empty);
+                //if (!string.IsNullOrEmpty(tag))
+                //{
+                //    result = chrome.Eval("var s = ''; Array.from(document.querySelectorAll('" + tag + "')).forEach(function (it) { s += it.innerText.trim(); s += ';' }); s;");
+                //    dt = JsonConvert.DeserializeObject<chrome_data>(result);
+                //    tag = dt.result.result.value;
+                //    if (tag != null) text = text.Replace("[§]", "§" + string.Join(";", tag.Split(';').Select(x => x.Trim()).Distinct()));
+                //}
+                //else text = text.Replace("[§]", string.Empty);
 
                 Regex regex = new Regex("[^a-zA-Z0-9]", RegexOptions.None);
                 file = regex.Replace(file, " ");
